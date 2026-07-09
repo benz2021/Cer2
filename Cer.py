@@ -16,6 +16,23 @@ except ImportError:
 # ==========================================
 # 🛠️ HELPER FUNCTIONS
 # ==========================================
+import os
+
+def get_system_font_path():
+    """ค้นหาฟอนต์ที่ปรับขนาดได้ในระบบ"""
+    paths = [
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+        "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
+        "/usr/share/fonts/truetype/freefont/FreeSans.ttf",
+        "C:\\Windows\\Fonts\\arial.ttf",
+        "C:\\Windows\\Fonts\\tahoma.ttf",
+        "/System/Library/Fonts/Helvetica.ttf"
+    ]
+    for p in paths:
+        if os.path.exists(p):
+            return p
+    return None
+
 def fix_thai_text(text):
     """
     จัดตำแหน่งสระและวรรณยุกต์ภาษาไทยให้ถูกต้อง (แก้ปัญหาสระจม/ลอย)
@@ -52,10 +69,16 @@ def get_font(font_name, size):
     """ดึงฟอนต์ตามชื่อและขนาด"""
     # ถ้าเป็น Default หรือไม่มีฟอนต์ในระบบ
     if font_name == 'Default' or not font_name:
-        # ลองใช้ฟอนต์เริ่มต้นของ PIL (อาจไม่รองรับภาษาไทย)
+        # พยายามใช้ฟอนต์ระบบที่ปรับขนาดได้ก่อน
+        sys_font_path = get_system_font_path()
+        if sys_font_path:
+            try:
+                return ImageFont.truetype(sys_font_path, size)
+            except:
+                pass
+        
+        # ถ้าไม่มีฟอนต์ระบบ ให้ใช้ฟอนต์เริ่มต้นของ PIL (แต่จะปรับขนาดไม่ได้)
         try:
-            # PIL's load_default() does not support size parameter. 
-            # If we want a scalable default font, we should try to find a system font.
             return ImageFont.load_default()
         except Exception as e:
             st.error(f"❌ ไม่สามารถโหลดฟอนต์เริ่มต้นของ PIL ได้: {e}")
