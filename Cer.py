@@ -100,6 +100,7 @@ def render_certificate(template_img, texts, row_data=None):
         except:
             text_width = draw.textlength(content, font=font)
 
+        # คำนวณจุดเริ่มต้น x (ถอยกลับไปครึ่งหนึ่งของความกว้างข้อความ เพื่อให้จุด x เป็นจุดกึ่งกลางพอดี)
         start_x = txt['x'] - (text_width / 2)
         draw.text((start_x, txt['y']), content, fill=txt['color'], font=font, anchor="ls")
     return img
@@ -225,7 +226,12 @@ else:
 if 'data' in st.session_state and st.session_state.texts:
     st.markdown("---")
     st.header("📦 สร้างและดาวน์โหลด")
-    filename_col = st.selectbox("เลือกคอลัมน์ที่จะใช้เป็นชื่อไฟล์", st.session_state.data.columns)
+    
+    c1, c2 = st.columns(2)
+    filename_col = c1.selectbox("เลือกคอลัมน์ที่จะใช้เป็นชื่อไฟล์", st.session_state.data.columns)
+    # เพิ่ม UI สำหรับเลือกประเภทไฟล์ที่ต้องการ Export
+    file_format = c2.radio("เลือกรูปแบบไฟล์ส่งออก", ["PNG", "PDF"], horizontal=True)
+    
     if st.button("🚀 เริ่มสร้างเกียรติบัตรทั้งหมด", type="primary"):
         zip_buffer = BytesIO()
         with st.spinner("กำลังประมวลผล..."):
@@ -233,7 +239,17 @@ if 'data' in st.session_state and st.session_state.texts:
                 for _, row in st.session_state.data.iterrows():
                     final_img = render_certificate(st.session_state.template, st.session_state.texts, row.to_dict())
                     img_io = BytesIO()
-                    final_img.save(img_io, format="PNG")
-                    zf.writestr(f"{sanitize_filename(row[filename_col])}.png", img_io.getvalue())
+                    
+                    # ตรวจสอบรูปแบบไฟล์ที่ผู้ใช้เลือก
+                    if file_format == "PNG":
+                        final_img.save(img_io, format="PNG")
+                        ext = "png"
+                    else:  # PDF
+                        # Pillow บังคับว่าภาพที่จะเซฟเป็น PDF ต้องอยู่ในโหมด RGB (ซึ่งฟังก์ชัน render ทำไว้ให้แล้ว)
+                        final_img.save(img_io, format="PDF")
+                        ext = "pdf"
+                        
+                    zf.writestr(f"{sanitize_filename(row[filename_col])}.{ext}", img_io.getvalue())
+                    
         st.success("สร้างไฟล์ทั้งหมดเรียบร้อย!")
-        st.download_button("📥 ดาวน์โหลดไฟล์ทั้งหมด (ZIP)", zip_buffer.getvalue(), "certificates.zip", "application/zip")
+        st.download_button(f"📥 ดาวน์โหลดไฟล์ทั้งหมด ({file_format} ใน ZIP)", zip_buffer.getvalue(), "certificates.zip", "application/zip")
