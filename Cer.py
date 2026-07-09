@@ -54,6 +54,8 @@ def get_font(font_name, size):
     if font_name == 'Default' or not font_name:
         # ลองใช้ฟอนต์เริ่มต้นของ PIL (อาจไม่รองรับภาษาไทย)
         try:
+            # PIL's load_default() does not support size parameter. 
+            # If we want a scalable default font, we should try to find a system font.
             return ImageFont.load_default()
         except Exception as e:
             st.error(f"❌ ไม่สามารถโหลดฟอนต์เริ่มต้นของ PIL ได้: {e}")
@@ -100,7 +102,12 @@ def render_certificate(template_img, texts, row_data=None):
         font = get_font(txt.get('font_name', 'Default'), txt['size'])
 
         # 1. ให้โปรแกรมวัดความกว้างของข้อความนั้นๆ ก่อน (หน่วยเป็นพิกเซล)
-        text_width = draw.textlength(content, font=font)
+        # ใช้ font.getbbox เพื่อความแม่นยำในการวัดขนาดสำหรับฟอนต์ที่ปรับขนาดได้
+        try:
+            text_bbox = font.getbbox(content)
+            text_width = text_bbox[2] - text_bbox[0]
+        except:
+            text_width = draw.textlength(content, font=font)
 
         # 2. คำนวณหาจุด X ทางซ้ายสุด (เอาพิกัดแกน X ที่คลิกไว้ ลบด้วย ครึ่งหนึ่งของความกว้างข้อความ)
         start_x = txt['x'] - (text_width / 2)
