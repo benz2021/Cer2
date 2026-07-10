@@ -111,8 +111,13 @@ def render_certificate(template_img, texts, row_data=None):
         
         if not content: continue
         
-        # แก้สระภาษาไทย
+        # --- จุดที่ต้องแก้ไข ---
+        # แก้สระภาษาไทยและวรรณยุกต์
         content = fix_thai_text(content)
+        
+        # เพิ่มบรรทัดนี้: เรียกใช้ฟังก์ชันตัดฐาน ญ, ฐ เมื่อมีสระล่าง
+        content = fix_thai_baseless_chars(content) 
+        # ---------------------
             
         # ใช้ฟอนต์ที่บันทึกไว้สำหรับข้อความนี้โดยเฉพาะ
         font = get_font(txt.get('font_name'), txt['size'])
@@ -124,7 +129,7 @@ def render_certificate(template_img, texts, row_data=None):
         except:
             text_width = draw.textlength(content, font=font)
 
-        # คำนวณจุดเริ่มต้น x (ถอยกลับไปครึ่งหนึ่งของความกว้างข้อความ เพื่อให้จุด x เป็นจุดกึ่งกลางพอดี)
+        # คำนวณจุดเริ่มต้น x
         start_x = txt['x'] - (text_width / 2)
         draw.text((start_x, txt['y']), content, fill=txt['color'], font=font, anchor="ls")
     return img
