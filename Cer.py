@@ -69,6 +69,30 @@ def get_font(font_name, size):
 def sanitize_filename(name):
     return re.sub(r'[<>:"/\\|?*]', '_', str(name)).strip() or "certificate"
 
+def fix_thai_baseless_chars(text):
+    """
+    ฟังก์ชันสำหรับตัดฐาน ญ และ ฐ เมื่อมีสระล่าง (ุ, ู, ฺ)
+    เพื่อเตรียมข้อความก่อนนำไปใช้กับ PIL.ImageDraw หรือสร้างเอกสาร
+    """
+    if not isinstance(text, str):
+        return text
+
+    # รหัส Unicode สำหรับตัวอักษรพิเศษ (PUA) ที่ไม่มีฐาน
+    YO_YING_NO_BASE = '\uF70F'  # ญ (ตัดฐาน)
+    THO_THAN_NO_BASE = '\uF700' # ฐ (ตัดฐาน)
+
+    # กรณี ญ.หญิง
+    text = text.replace('ญุ', YO_YING_NO_BASE + 'ุ')
+    text = text.replace('ญู', YO_YING_NO_BASE + 'ู')
+    text = text.replace('ญฺ', YO_YING_NO_BASE + 'ฺ') # สระพินทุ (จุดด้านล่าง)
+
+    # แถม: กรณี ฐ.ฐาน (ใช้หลักการเดียวกัน)
+    text = text.replace('ฐุ', THO_THAN_NO_BASE + 'ุ')
+    text = text.replace('ฐู', THO_THAN_NO_BASE + 'ู')
+    text = text.replace('ฐฺ', THO_THAN_NO_BASE + 'ฺ')
+
+    return text
+
 def render_certificate(template_img, texts, row_data=None):
     img = template_img.copy()
     if img.mode != 'RGB':
